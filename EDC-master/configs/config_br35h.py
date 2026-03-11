@@ -21,10 +21,7 @@ if ENV == "colab":
     # In Colab always prefer CUDA
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 else:
-    # Local M1/M2/M3/M4 Mac → use MPS
-    if torch.backends.mps.is_available():
-        device = torch.device("mps")
-    elif torch.cuda.is_available():
+    if torch.cuda.is_available():
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
@@ -38,7 +35,7 @@ if ENV == "colab":
 else:
     # Local: assuming config.py is at:
     #   APTOS_EDC/EDC-master/config_aptos.py
-    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../."))
+    BASE_DIR = "/home/cs24d0008/EDC_SSL"
 
 
 # --------------------------------------------------
