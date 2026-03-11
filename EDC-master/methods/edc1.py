@@ -17,7 +17,7 @@ import cv2
 import time
 
 USE_CUDA = torch.cuda.is_available()
-USE_MPS = torch.backends.mps.is_available() and not USE_CUDA
+USE_MPS = False
 
 
 class TimerEvent:
