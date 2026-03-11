@@ -55,6 +55,7 @@ cd "$CODE_DIR"
 
 # Activate the venv
 source "${VENV_DIR}/bin/activate"
+export PYTHONPATH="/home/cs24d0008/EDC_SSL/EDC_Moco/EDC-master:$PYTHONPATH"
 echo "Python: $(which python)"
 echo "Version: $(python --version)"
 
@@ -82,6 +83,11 @@ run_dataset () {
         --gpu             "$GPU"            \
         --moco_weights_path "$MOCO_WEIGHTS" \
         --save_name       "$SAVE_NAME"      \
+        --seed            "$SEED"           \
+        --amp             "$AMP"            \
+        --freeze_encoder  "$FREEZE_ENCODER" \
+        --use_tensorboard \
+        2>&1 | tee "$LOG"
         # --batch_size      "$BATCH"          \
         # --eval_batch_size "$EVAL_BATCH"     \
         # --num_train_iter  "$NUM_TRAIN_ITER" \
@@ -89,12 +95,6 @@ run_dataset () {
         # --lr              "$LR"             \
         # --lr_encoder      "$LR_ENCODER"     \
         # --weight_decay    "$WEIGHT_DECAY"   \
-        --seed            "$SEED"           \
-        --amp             "$AMP"            \
-        --freeze_encoder  "$FREEZE_ENCODER" \
-        --use_tensorboard \
-        2>&1 | tee "$LOG"
-
     echo "  Finished : $SAVE_NAME"
 }
 
