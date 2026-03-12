@@ -45,3 +45,8 @@ saved_models/
 *.zip
 *.tar.gz
 
+# -------------------------
+# Extra Python files
+# -------------------------
+MoCo_1DatasetPretrain_tSNE.py
+MoCo_5DatasetPretrain_tSNE.py
