@@ -44,12 +44,12 @@ else:
 
 CODE_DIR = os.path.join(BASE_DIR, "EDC-master")
 
-# ---- LUNG_CT dataset ----
+# ---- LungCT dataset ----
 # Must contain:
-#   LUNG_CT/
+#   LungCT/
 #      ├── train/NORMAL
 #      └── test/NORMAL / ABNORMAL
-DATASET_DIR = os.path.join(BASE_DIR, "LUNG_CT")
+DATASET_DIR = os.path.join(BASE_DIR, "LungCT")
 
 
 TRAIN_DIR = os.path.join(DATASET_DIR, "train")
@@ -63,7 +63,7 @@ SAVED_MODELS_DIR = os.path.join(CODE_DIR, "saved_models")
 # Pretty print configuration
 # --------------------------------------------------
 def print_config():
-    print("===== LUNG_CT CONFIGURATION =====")
+    print("===== LungCT CONFIGURATION =====")
     print(f"Environment:     {ENV}")
     print(f"Device:          {device}")
     print(f"Base directory:  {BASE_DIR}")
