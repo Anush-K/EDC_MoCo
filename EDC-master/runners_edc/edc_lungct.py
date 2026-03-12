@@ -144,7 +144,7 @@ def main_worker(gpu, args):
     runner.set_optimizer(optimizer, scheduler)
 
     # ===== Device setup (Universal) =====
-    if torch.backends.mps.is_available():
+    if False:
         device = torch.device("mps")
         logger.info("Using Apple Silicon GPU (MPS backend)")
     elif torch.cuda.is_available():
