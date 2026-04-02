@@ -22,7 +22,7 @@ set -e
 # MOCO_WEIGHTS="/home/cs24d0008/EDC_SSL/EDC_5Dataset_SSL_Weights/moco_all5datasets_allN_200ep.pth"
 MOCO_APTOS="/home/cs24d0008/EDC_SSL/EDC_SSL_Weights/moco_APTOS_normal_200ep.pth"
 MOCO_ISIC="/home/cs24d0008/EDC_SSL/EDC_SSL_Weights/moco_ISIC2018_normal_200ep.pth"
-# MOCO_BR35H="/home/cs24d0008/EDC_SSL/EDC_SSL_Weights/moco_Br35H_normal_200ep.pth"
+MOCO_BR35H="/home/cs24d0008/EDC_SSL/EDC_SSL_Weights/moco_Br35H_normal_200ep.pth"
 # MOCO_OCT="/home/cs24d0008/EDC_SSL/EDC_SSL_Weights/moco_OCT_normal_200ep.pth"
 # MOCO_LUNGCT="/home/cs24d0008/EDC_SSL/EDC_SSL_Weights/moco_LungCT_normal_200ep.pth"
 
@@ -90,7 +90,7 @@ run_dataset () {
 # ─── RUN EACH DATASET ────────────────────────────────────────────────────────
 run_dataset "runners_edc_ssl/edc_ssl_aptos.py"    "edc_ssl_finetune_aptos"    "$MOCO_APTOS"
 run_dataset "runners_edc_ssl/edc_ssl_isic2018.py" "edc_ssl_finetune_isic2018" "$MOCO_ISIC"
-# run_dataset "runners_edc_ssl/edc_ssl_br35h.py"    "edc_ssl_finetune_br35h"    "$MOCO_BR35H"
+run_dataset "runners_edc_ssl/edc_ssl_br35h.py"    "edc_ssl_finetune_br35h"    "$MOCO_BR35H"
 # run_dataset "runners_edc_ssl/edc_ssl_oct2017.py"  "edc_ssl_finetune_oct2017"  "$MOCO_OCT"
 # run_dataset "runners_edc_ssl/edc_ssl_lungct.py"   "edc_ssl_finetune_lungct"   "$MOCO_LUNGCT"
 
