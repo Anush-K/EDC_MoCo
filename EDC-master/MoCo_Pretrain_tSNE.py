@@ -92,13 +92,23 @@ C. During EDC fine-tuning (checked in edc1.py logs):
 
 USAGE
 -----
-  # Multi-dataset pretrain (approach 1):
-  python3 /home/cs24d0008/EDC_SSL/EDC_Moco/EDC-master/MoCo_Pretrain_tSNE.py \
-      --data_roots /home/cs24d0008/EDC_SSL/APTOS/train /home/cs24d0008/EDC_SSL/LungCT/train /home/cs24d0008/EDC_SSL/BUSI/train \
-      --save_path  /home/cs24d0008/EDC_SSL/EDC_Improved_Weights \
-      --epochs     1 \
-      --batch_size 128 \
-      --run_name multi_v1
+python3 MoCo_Pretrain_tSNE.py \
+    --data_roots \
+        /home/cs24d0008/EDC_SSL/LungCT/train \
+        /home/cs24d0008/EDC_SSL/APTOS/train \
+        /home/cs24d0008/EDC_SSL/BUSI/train \
+    --save_path /home/cs24d0008/EDC_SSL/EDC_Improved_Weights \
+    --epochs 200 \
+    --batch_size 128 \
+    --run_name multi_v1
+
+SANITY CHECK
+python3 MoCo_Pretrain_tSNE.py \
+    --data_roots /home/cs24d0008/EDC_SSL/LungCT/train \
+    --save_path ./weights/test \
+    --epochs 1 \
+    --batch_size 128 \
+    --skip_tsne
 
   # Single-dataset pretrain (approach 2):
   python3 MoCo_Pretrain_tSNE.py \
@@ -107,6 +117,13 @@ USAGE
       --epochs     200 \
       --batch_size 64
 """
+# tmux new -s moco
+
+# chmod +x run_all_ssl_finetune.sh
+# ./run_all_baseline.sh
+# ./run_all_ssl_finetune.sh
+# ./run_all_ssl_frozen.sh
+
 
 
 # ==============================================================
@@ -1034,7 +1051,7 @@ def main():
         total_loss_l3 = 0.0
         total_loss_l2 = 0.0
 
-        pbar = tqdm(loader, desc=f"Epoch [{epoch+1} of {args.epochs}]")
+        pbar = tqdm(loader, desc=f"Epoch [{epoch+1}/{args.epochs}]")
 
         for step, (images, _) in enumerate(pbar):
             im_q = images[0].to(device, non_blocking=True)
@@ -1069,7 +1086,7 @@ def main():
 
         scheduler.step()
 
-        n_batches = len(loader) if len(loader) > 1 else 1
+        n_batches = len(loader)
         print(
             f"\nEpoch {epoch+1:4d} | "
             f"Total: {total_loss/n_batches:.4f} | "
