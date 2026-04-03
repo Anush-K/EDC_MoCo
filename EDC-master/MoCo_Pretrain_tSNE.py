@@ -93,14 +93,15 @@ C. During EDC fine-tuning (checked in edc1.py logs):
 USAGE
 -----
   # Multi-dataset pretrain (approach 1):
-  python MoCo_Pretrain_tSNE.py \
-      --data_roots /home/cs24d0008/EDC_SSL/LungCT/train /home/cs24d0008/EDC_SSL/APTOS/train /home/cs24d0008/EDC_SSL/BUSI/train \
-      --save_path  /home/cs24d0008/EDC_SSL/EDC_SSL_Weights \
-      --epochs     200 \
-      --batch_size 128
+  python3 /home/cs24d0008/EDC_SSL/EDC_Moco/EDC-master/MoCo_Pretrain_tSNE.py \
+      --data_roots /home/cs24d0008/EDC_SSL/APTOS/train /home/cs24d0008/EDC_SSL/LungCT/train /home/cs24d0008/EDC_SSL/BUSI/train \
+      --save_path  /home/cs24d0008/EDC_SSL/EDC_Improved_Weights \
+      --epochs     1 \
+      --batch_size 128 \
+      --run_name multi_v1
 
   # Single-dataset pretrain (approach 2):
-  python MoCo_Pretrain_tSNE.py \
+  python3 MoCo_Pretrain_tSNE.py \
       --data_roots /path/LungCT/train \
       --save_path  /path/to/weights \
       --epochs     200 \
@@ -1033,7 +1034,7 @@ def main():
         total_loss_l3 = 0.0
         total_loss_l2 = 0.0
 
-        pbar = tqdm(loader, desc=f"Epoch [{epoch+1}/{args.epochs}]")
+        pbar = tqdm(loader, desc=f"Epoch [{epoch+1} of {args.epochs}]")
 
         for step, (images, _) in enumerate(pbar):
             im_q = images[0].to(device, non_blocking=True)
@@ -1068,7 +1069,7 @@ def main():
 
         scheduler.step()
 
-        n_batches = len(loader)
+        n_batches = len(loader) if len(loader) > 1 else 1
         print(
             f"\nEpoch {epoch+1:4d} | "
             f"Total: {total_loss/n_batches:.4f} | "
