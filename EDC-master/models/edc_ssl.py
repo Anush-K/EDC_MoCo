@@ -160,7 +160,7 @@ class MoCo_R50_R50(nn.Module):
         if self.freeze_encoder or not self.train_encoder or self.warmup_iters <= 0:
             return
 
-        if current_iter == self.warmup_iters and self._encoder_frozen:
+        if current_iter >= self.warmup_iters and self._encoder_frozen:
             # Warmup complete — unfreeze encoder
             self._apply_encoder_freeze(frozen=False)
             print(f"\n[MoCo_R50_R50] Warmup complete at iter {current_iter}. "

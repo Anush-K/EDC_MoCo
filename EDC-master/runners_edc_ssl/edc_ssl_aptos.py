@@ -85,7 +85,7 @@ def main_worker(gpu, args):
         drop_last=False,
     )
 
-    # ── Model (SSL encoder) ───────────────────────────────────────────────────
+    # ── Model (SSL encoder + warmup) ──────────────────────────────────────────
     model = MoCo_R50_R50(
         moco_weights_path=args.moco_weights_path,
         img_size=args.img_size,
@@ -94,6 +94,7 @@ def main_worker(gpu, args):
         reshape=True,
         bn_pretrain=False,
         freeze_encoder=args.freeze_encoder,
+        warmup_iters=args.warmup_iters,
     )
 
     for m in model.modules():
@@ -103,7 +104,7 @@ def main_worker(gpu, args):
     runner = EDC(model=model, num_eval_iter=args.num_eval_iter, logger=logger)
     logger.info(f"Trainable params: {count_parameters(runner.model):,}")
 
-    # ── Optimiser  (encoder gets lower lr) ───────────────────────────────────
+    # ── Optimiser (encoder gets lower lr) ─────────────────────────────────────
     optimizer = get_optimizer_v2(
         runner.model, args.optim, args.lr, args.momentum,
         lr_encoder=args.lr_encoder, weight_decay=args.weight_decay,
@@ -204,15 +205,15 @@ if __name__ == "__main__":
     parser.add_argument('--img_size',      type=int, default=256)
     parser.add_argument('--num_workers',   type=int, default=4)
 
-    # SSL-specific
-    parser.add_argument('--moco_weights_path', type=str,
-                        required=True,
-                        help='Path to moco_all5datasets_allN_200ep.pth')
+    parser.add_argument('--moco_weights_path', type=str, required=True,
+                        help='Path to MoCo pretrained .pth file')
     parser.add_argument('--freeze_encoder', type=str2bool, default=False,
-                        help='If True, encoder weights are frozen (linear-probe mode)')
+                        help='True = SSL-Frozen (linear probe), False = SSL-Finetune')
+    parser.add_argument('--warmup_iters', type=int, default=200,
+                        help='Iterations to keep encoder frozen at start of fine-tuning. '
+                             'Ignored when freeze_encoder=True.')
 
-    # Misc
-    parser.add_argument('--seed', default=0, type=int)
+    parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--gpu',  default='0', type=str)
     parser.add_argument('--c',    type=str, default='')
 
