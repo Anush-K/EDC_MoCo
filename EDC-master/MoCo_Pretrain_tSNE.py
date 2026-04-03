@@ -93,19 +93,20 @@ C. During EDC fine-tuning (checked in edc1.py logs):
 USAGE
 -----
   # Multi-dataset pretrain (approach 1):
-  python MoCo_Pretrain_Improved.py \
-      --data_roots /path/LungCT/train /path/ISIC2018/train /path/Br35H/train \
-      --save_path  /path/to/weights \
+  python MoCo_Pretrain_tSNE.py \
+      --data_roots /home/cs24d0008/EDC_SSL/LungCT/train /home/cs24d0008/EDC_SSL/APTOS/train /home/cs24d0008/EDC_SSL/BUSI/train \
+      --save_path  /home/cs24d0008/EDC_SSL/EDC_SSL_Weights \
       --epochs     200 \
       --batch_size 128
 
   # Single-dataset pretrain (approach 2):
-  python MoCo_Pretrain_Improved.py \
+  python MoCo_Pretrain_tSNE.py \
       --data_roots /path/LungCT/train \
       --save_path  /path/to/weights \
       --epochs     200 \
       --batch_size 64
 """
+
 
 # ==============================================================
 # IMPORTS
