@@ -37,12 +37,8 @@ class TimerEvent:
         return (other_event.end_time - self.start_time) * 1000
 
 
-
 class EDC:
     def __init__(self, model, it=0, num_eval_iter=1000, amap_reduction='max', tb_log=None, logger=None):
-        """
-        """
-
         super(EDC, self).__init__()
 
         self.loader = {}
@@ -50,7 +46,7 @@ class EDC:
 
         if USE_MPS:
             self.model = self.model.float()
-        
+
         self.num_eval_iter = num_eval_iter
         self.tb_log = tb_log
 
@@ -79,9 +75,6 @@ class EDC:
     def train(self, args, device, logger=None):
         self.model.train()
 
-        # for gpu profiling
-        # for unified profiling
-        # for unified profiling
         if USE_MPS:
             start_batch = TimerEvent()
             end_batch = TimerEvent()
@@ -99,7 +92,6 @@ class EDC:
         scaler = GradScaler()
         amp_cm = autocast if args.amp else contextlib.nullcontext
 
-        # eval for once to verify if the checkpoint is loaded correctly
         if args.resume == True:
             eval_dict = self.evaluate(args=args, device=device)
             print(eval_dict)
@@ -108,70 +100,53 @@ class EDC:
 
         for idx, x, _, y, filename in tqdm(self.loader_dict['train']):
 
-            # prevent the training iterations exceed args.num_train_iter
             if self.it > args.num_train_iter:
                 break
 
-            # --- end prefetch timing ---
             if USE_MPS:
-                end_batch.end()        # mark end of prefetch
+                end_batch.end()
             else:
                 end_batch.record()
                 torch.cuda.synchronize()
-                
-            # --- start run timing ---
+
             if USE_MPS:
                 start_run.record()
             else:
                 start_run.record()
-            
+
             x = x.to(device)
             y = y.to(device, dtype=torch.float32)
             if USE_MPS:
-                x = x.float() 
+                x = x.float()
                 y = y.float()
 
             if args.amp and not USE_MPS:
                 amp_cm = autocast
             else:
-                amp_cm = contextlib.nullcontext 
+                amp_cm = contextlib.nullcontext
 
-            # with amp_cm():
-            #     result = self.model(x)
+            # ── Warmup hook ───────────────────────────────────────────────────
+            # Notify the SSL model of the current iteration so it can manage
+            # the warmup → unfreeze transition. This is a no-op for the
+            # baseline R50_R50 model (which has no set_iter method).
+            if hasattr(self.model, 'set_iter'):
+                self.model.set_iter(self.it)
+            # ─────────────────────────────────────────────────────────────────
 
-            #     total_loss = result['loss'].mean()
-
-            # -------- EDC + Diffusion loss --------
-            # with amp_cm():
-            #     result = self.model(x)
-            #     edc_loss = result['loss'].mean()
-
-            #     # -------- Diffusion loss --------
-            #     e3 = self.model.edc_encoder(x)[2]  # e3 feature map
-            #     #diff_loss = self.diffusion.compute_loss(e3)
-            #     diff_loss = self.diffusion.compute_loss(e3.detach())
-            #     total_loss = edc_loss + args.lambda_diff * diff_loss
             with amp_cm():
                 result = self.model(x)
                 edc_loss = result['loss'].mean()
 
                 e3 = self.model.edc_encoder(x)[2]
-                # #normalize e3 for stable diffusion training
-                # #e3 = torch.nn.functional.normalize(e3, dim=1)
-                # Normalize ONLY for diffusion
                 e3_norm = torch.nn.functional.normalize(e3, dim=1)
 
-
-
                 if self.diffusion is not None:
-                    #diff_loss = self.diffusion.compute_loss(e3.detach())
                     diff_loss = self.diffusion.compute_loss(e3_norm.detach())
                     total_loss = edc_loss + args.lambda_diff * diff_loss
                 else:
                     diff_loss = torch.tensor(0.0, device=device)
                     total_loss = edc_loss
 
-            
             # parameter updates
             if args.amp:
                 scaler.scale(total_loss).backward()
@@ -181,9 +156,6 @@ class EDC:
                 scaler.step(self.optimizer)
                 scaler.update()
             else:
-                # -------------------------
-                # Backprop EDC
-                # -------------------------
                 self.optimizer.zero_grad()
                 edc_loss.backward()
 
@@ -192,38 +164,21 @@ class EDC:
 
                 self.optimizer.step()
 
-                # -------------------------
-                # Backprop Diffusion
-                # -------------------------
                 if self.diffusion is not None:
                     self.diffusion_optimizer.zero_grad()
                     diff_loss.backward()
-
                     torch.nn.utils.clip_grad_norm_(self.diffusion.parameters(), 1.0)
-
                     self.diffusion_optimizer.step()
-
                     self.diffusion.update_ema()
 
-                # Step scheduler for EDC only
                 self.scheduler.step()
 
-
-
-            # # ADD: update EMA for diffusion UNet
-            # if hasattr(self, "diffusion") and hasattr(self.diffusion, "update_ema"):
-            #     self.diffusion.update_ema()
-
-            # self.scheduler.step()
-            # self.model.zero_grad()
-
-            # --- end run timing ---
             if USE_MPS:
                 end_run.end()
             else:
                 end_run.record()
                 torch.cuda.synchronize()
-            # tensorboard_dict update
+
             tb_dict = {}
             tb_dict['train/total_loss'] = total_loss.detach().item()
             tb_dict['train/edc_loss'] = edc_loss.detach().item()
@@ -231,10 +186,8 @@ class EDC:
             tb_dict['train/e1_std'] = result['e1_std'].detach().item()
             tb_dict['train/e2_std'] = result['e2_std'].detach().item()
             tb_dict['train/e3_std'] = result['e3_std'].detach().item()
-
             tb_dict['lr'] = self.optimizer.param_groups[0]['lr']
-            
-            # --- tensorboard timing ---
+
             if USE_MPS:
                 tb_dict['train/prefecth_time'] = start_batch.elapsed_time(end_batch) / 1000.
                 tb_dict['train/run_time'] = start_run.elapsed_time(end_run) / 1000.
@@ -245,7 +198,6 @@ class EDC:
             if (self.it + 1) % self.num_eval_iter == 0:
                 eval_dict = self.evaluate(args=args, device=device)
 
-                # --- REMOVE non-scalar entries before TensorBoard ---
                 eval_dict_tb = eval_dict.copy()
                 eval_dict_tb.pop('eval/y_true', None)
                 eval_dict_tb.pop('eval/y_score', None)
@@ -263,7 +215,6 @@ class EDC:
 
                 if self.tb_log is not None:
                     self.tb_log.update(tb_dict, self.it)
-
                     tb_dict['it'] = self.it
                     train_log.append(tb_dict)
 
@@ -292,7 +243,6 @@ class EDC:
         y2_prob = []
         y3_prob = []
 
-        # with self.diffusion.ema_scope():
         ema_cm = self.diffusion.ema_scope() if self.diffusion is not None else contextlib.nullcontext()
 
         with ema_cm:
@@ -309,7 +259,7 @@ class EDC:
                     p1_img = result['p1'].flatten(1).mean(1)
                     p2_img = result['p2'].flatten(1).mean(1)
                     p3_img = result['p3'].flatten(1).mean(1)
-                elif isinstance(self.amap_reduction, float):  # the mean of max 'self.amap_reduction' percent
+                elif isinstance(self.amap_reduction, float):
                     anomaly_map = result['p_all'].flatten(1)
                     p_img = torch.sort(anomaly_map, dim=1, descending=True)[0][:,
                             :int(anomaly_map.shape[1] * self.amap_reduction)].mean(dim=1)
@@ -322,7 +272,7 @@ class EDC:
                     anomaly_map = result['p3'].flatten(1)
                     p3_img = torch.sort(anomaly_map, dim=1, descending=True)[0][:,
                             :int(anomaly_map.shape[1] * self.amap_reduction)].mean(dim=1)
-                else:  # max
+                else:
                     p_img = result['p_all'].flatten(1).max(1)[0]
                     p1_img = result['p1'].flatten(1).max(1)[0]
                     p2_img = result['p2'].flatten(1).max(1)[0]
@@ -344,7 +294,6 @@ class EDC:
                     for i in range(xo.shape[0]):
                         image = xo[i].numpy().astype('uint8')
                         anomaly_map = anomaly_maps[i].cpu().permute(1, 2, 0).numpy()
-
                         file_name = file_names[i]
                         self.save_anomaly_map(anomaly_map, image, save_path, file_name)
 
@@ -374,13 +323,11 @@ class EDC:
     def save_model(self, save_name, save_path):
         save_filename = os.path.join(save_path, save_name)
         self.model.train()
-        torch.save({'model': self.model.state_dict()},
-                   save_filename)
+        torch.save({'model': self.model.state_dict()}, save_filename)
         self.print_fn(f"model saved: {save_filename}")
 
     def load_model(self, load_path):
         checkpoint = torch.load(load_path)
-
         self.model.load_state_dict(checkpoint['model'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.scheduler.load_state_dict(checkpoint['scheduler'])
@@ -388,14 +335,9 @@ class EDC:
         self.print_fn('model loaded')
 
     def save_anomaly_map(self, anomaly_map, image, save_path, file_name):
-        # if anomaly_map.shape != image.shape:
-        #     anomaly_map = cv2.resize(anomaly_map, (image.shape[0], image.shape[1]))
         anomaly_map_norm = min_max_norm(anomaly_map)
-        # anomaly map on image
         heatmap = cvt2heatmap(anomaly_map_norm * 255)
         hm_on_img = heatmap_on_image(heatmap, image)
-
-        # save images
         cv2.imwrite(os.path.join(save_path, file_name), hm_on_img)
 
 
@@ -417,7 +359,6 @@ def min_max_norm(image):
 
 def return_best_thr(y_true, y_score):
     precs, recs, thrs = precision_recall_curve(y_true, y_score)
-
     f1s = 2 * precs * recs / (precs + recs + 1e-7)
     f1s = f1s[:-1]
     thrs = thrs[~np.isnan(f1s)]
@@ -429,7 +370,6 @@ def return_best_thr(y_true, y_score):
 def specificity_score(y_true, y_pred):
     y_true = np.array(y_true)
     y_pred = np.array(y_pred).astype(int)
-
     TN = ((y_pred == 0) & (y_true == 0)).sum()
     N = (y_true == 0).sum()
     return TN / (N + 1e-8)
