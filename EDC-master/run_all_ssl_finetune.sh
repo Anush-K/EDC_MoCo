@@ -22,7 +22,7 @@ set -e
 
 # ── MoCo weights — edit these paths to point to your improved pretrain output
 # For approach 1 (multi-dataset pretrain), use the same weights for all three:
-MOCO_MULTI="/home/cs24d0008/EDC_SSL/EDC_Improved_Weights/moco_APTOS_LungCT_BUSI_multi_v1_200ep.pth"
+MOCO_MULTI="/home/cs24d0008/EDC_SSL/EDC_Improved_Weights/moco_LungCT_APTOS_BUSI_multi_v1_200ep.pth"
 
 # For approach 2 (per-dataset pretrain), uncomment and set individually:
 # MOCO_APTOS="/home/cs24d0008/EDC_SSL/EDC_Improved_Weights/moco_APTOS_aptos_200ep.pth"

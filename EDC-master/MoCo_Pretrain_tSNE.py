@@ -104,8 +104,11 @@ python3 MoCo_Pretrain_tSNE.py \
 
 SANITY CHECK
 python3 MoCo_Pretrain_tSNE.py \
-    --data_roots /home/cs24d0008/EDC_SSL/LungCT/train \
-    --save_path ./weights/test \
+    --data_roots \
+        /home/cs24d0008/EDC_SSL/LungCT/train \
+        /home/cs24d0008/EDC_SSL/APTOS/train \
+        /home/cs24d0008/EDC_SSL/BUSI/train \
+    --save_path /home/cs24d0008/EDC_SSL/EDC_Improved_Weights \
     --epochs 1 \
     --batch_size 128 \
     --skip_tsne
@@ -811,7 +814,9 @@ def run_tsne(save_path, dataset_roots, final_weights_path,
             feats = []
             with torch.no_grad():
                 for imgs, _ in tqdm(dl, desc=f"  Extracting [{name}]", leave=False):
-                    feats.append(backbone(imgs.to(device)).cpu().numpy())
+                    out = backbone(imgs.to(device))        # [B, 2048, 1, 1]
+                    out = out.view(out.size(0), -1)        # [B, 2048]
+                    feats.append(out.cpu().numpy())
             feats = np.concatenate(feats, axis=0)
             if max_per_ds and len(feats) > max_per_ds:
                 np.random.seed(seed)
@@ -919,7 +924,7 @@ def main():
     dataset_roots = {}
     for root in args.data_roots:
         root = root.rstrip("/")
-        name = os.path.basename(root)
+        name = os.path.basename(os.path.dirname(root))
         dataset_roots[name] = root
 
     # ------------------------------------------------------------------
